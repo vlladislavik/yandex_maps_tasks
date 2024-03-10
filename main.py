@@ -3,28 +3,30 @@ import sys
 
 import requests
 from PyQt5.QtGui import QPixmap
-from PyQt5 import uic
+from PyQt5 import Qt, QtGui, QtCore, uic
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel
+# from ui_file import Ui_MainWindow
 
 SCREEN_SIZE = [600, 450]
 
 
-class Example(QMainWindow):
+class Example(QMainWindow):  # Ui_MainWindow
     def __init__(self):
         super().__init__()
         uic.loadUi('yandex_maps.ui', self)
+        # self.setupUi(self)
+        # self.setFocusPolicy(QtCore.Qt.StrongFocus)
 
         self.btn.clicked.connect(self.getImage)
 
     def getImage(self):
-        self.spn = self.spn_pole.toPlainText().split(', ')
+        self.spn = list(map(lambda i: int(float(i) * 100), self.spn_pole.toPlainText().split(', ')))
         self.coords = self.coords_pole.toPlainText().split(', ')
 
         print(self.coords, self.spn)
 
-        map_request = ("http://static-maps.yandex.ru/1.x/?ll={},{}"
-                       "&spn={},{}&l=map").format(self.coords[1], self.coords[0],
-                                                  self.spn[0], self.spn[1])
+        map_request = (f"http://static-maps.yandex.ru/1.x/?ll={self.coords[1]},{self.coords[0]}"
+                       f"&spn={self.spn[0] / 100},{self.spn[1] / 100}&l=map")
         response = requests.get(map_request)
 
         if not response:
@@ -39,7 +41,29 @@ class Example(QMainWindow):
 
         self.pixmap = QPixmap(self.map_file)
         self.map_image.setPixmap(self.pixmap)
+        '''self.spn_pole.setReadOnly(True)
+        self.coords_pole.setReadOnly(True)'''
 
+    def keyPressEvent(self, event) -> None:
+        if event.key() == QtCore.Qt.Key_PageUp:
+            if self.spn[0] < 15:
+                self.spn[0] += 5
+                self.spn[1] += 5
+            else:
+                self.spn[0] += 50
+                self.spn[1] += 50
+            self.spn_pole.setText(f'{self.spn[0] / 100}, {self.spn[1] / 100}')
+            self.getImage()
+        elif event.key() == QtCore.Qt.Key_PageDown:
+            if self.spn[0] < 15:
+                self.spn[0] -= 5
+                self.spn[1] -= 5
+            else:
+                self.spn[0] -= 50
+                self.spn[1] -= 50
+            self.spn_pole.setText(f'{self.spn[0] / 100}, {self.spn[1] / 100}')
+            print(self.spn)
+            self.getImage()
 
     def closeEvent(self, event):
         os.remove(self.map_file)
