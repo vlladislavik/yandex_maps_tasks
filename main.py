@@ -1,5 +1,6 @@
 import os
 import sys
+import math
 
 import requests
 from PyQt5.QtGui import QPixmap
@@ -21,9 +22,9 @@ class Example(QMainWindow):  # Ui_MainWindow
 
     def getImage(self):
         self.spn = list(map(lambda i: int(float(i) * 100), self.spn_pole.toPlainText().split(', ')))
-        self.coords = self.coords_pole.toPlainText().split(', ')
+        self.coords = list(map(float, self.coords_pole.toPlainText().split(', ')))
 
-        print(self.coords, self.spn)
+        # print(self.coords, self.spn)
 
         map_request = (f"http://static-maps.yandex.ru/1.x/?ll={self.coords[1]},{self.coords[0]}"
                        f"&spn={self.spn[0] / 100},{self.spn[1] / 100}&l=map")
@@ -41,8 +42,8 @@ class Example(QMainWindow):  # Ui_MainWindow
 
         self.pixmap = QPixmap(self.map_file)
         self.map_image.setPixmap(self.pixmap)
-        '''self.spn_pole.setReadOnly(True)
-        self.coords_pole.setReadOnly(True)'''
+        self.spn_pole.setReadOnly(True)
+        self.coords_pole.setReadOnly(True)
 
     def keyPressEvent(self, event) -> None:
         if event.key() == QtCore.Qt.Key_PageUp:
@@ -52,18 +53,48 @@ class Example(QMainWindow):  # Ui_MainWindow
             else:
                 self.spn[0] += 50
                 self.spn[1] += 50
-            self.spn_pole.setText(f'{self.spn[0] / 100}, {self.spn[1] / 100}')
-            self.getImage()
         elif event.key() == QtCore.Qt.Key_PageDown:
             if self.spn[0] < 15:
                 self.spn[0] -= 5
                 self.spn[1] -= 5
-            else:
+            elif self.spn[0] >= 50 and self.spn[1] >= 50:
                 self.spn[0] -= 50
                 self.spn[1] -= 50
-            self.spn_pole.setText(f'{self.spn[0] / 100}, {self.spn[1] / 100}')
-            print(self.spn)
-            self.getImage()
+        elif event.key() == QtCore.Qt.Key_D:
+            self.coords[1] += self.spn[1] / 100
+        elif event.key() == QtCore.Qt.Key_A:
+            self.coords[1] -= self.spn[1] / 100
+        elif event.key() == QtCore.Qt.Key_W:
+            self.coords[0] += self.spn[0] / 100
+        elif event.key() == QtCore.Qt.Key_S:
+            self.coords[0] -= self.spn[0] / 100
+        else:
+            # print(event.key(), 'll')
+            return None
+        self.coords[0] = round(self.coords[0], 8)
+        self.coords[1] = round(self.coords[1], 8)
+        if self.spn[0] > 9000:
+            self.spn[0] = 9000
+        if self.spn[1] > 9000:
+            self.spn[1] = 9000
+        if self.spn[0] < 0:
+            self.spn[0] = 0
+        if self.spn[1] < 0:
+            self.spn[1] = 0
+        if self.coords[0] > 90:
+            self.coords[0] = 90
+        if self.coords[0] < -90:
+            self.coords[0] = -90
+        if self.coords[1] > 180:
+            self.coords[1] = -180 + self.coords[1] + 180
+        if self.coords[1] < -180:
+            self.coords[1] = 180 + self.coords[1] + 180
+        if self.coords[1] == 180:
+            self.coords[1] = -180
+        self.coords_pole.setText(f'{self.coords[0]}, {self.coords[1]}')
+        self.spn_pole.setText(f'{self.spn[0] / 100}, {self.spn[1] / 100}')
+        #print(event.key)
+        self.getImage()
 
     def closeEvent(self, event):
         os.remove(self.map_file)
